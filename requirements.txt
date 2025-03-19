@@ -1,0 +1,5 @@
+streamlit
+langchain_groq
+openai-whisper
+torch
+torchaudio

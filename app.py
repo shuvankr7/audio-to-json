@@ -57,7 +57,7 @@ def process_transaction_message(message, llm):
     )
     input_prompt = f"{system_prompt}\nMessage: {message}"
     response = llm.invoke(input_prompt)
-    return response
+    return response.content if hasattr(response, 'content') else response
 
 def main():
     st.markdown("<h1 style='text-align: center;'>🔊 Audio Transaction Processor</h1>", unsafe_allow_html=True)
@@ -93,7 +93,7 @@ def main():
                         processed_result = process_transaction_message(edited_transcription, rag_llm)
                         if processed_result:
                             st.markdown("### 💰 Extracted Transaction Details")
-                            st.code(processed_result.content if hasattr(processed_result, 'content') else processed_result, language="json")
+                            st.code(processed_result, language="json")
                         else:
                             st.error("❌ Failed to process transaction details.")
                 

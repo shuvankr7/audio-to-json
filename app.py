@@ -9,7 +9,7 @@ os.environ["USER_AGENT"] = "RAG-Chat-Assistant/1.0"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# Default Groq API key
+# Default Groq API key (Ensure this is kept secure)
 GROQ_API_KEY = "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"
 DEFAULT_MODEL = "llama3-70b-8192"
 DEFAULT_TEMPERATURE = 0.5
@@ -58,15 +58,13 @@ whisper_model = load_whisper_model()
 rag_llm = initialize_rag_system()
 
 def process_transaction_message(message, llm):
+    if llm is None:
+        return "Error: RAG system is not initialized."
     system_prompt = (
-        "your gave some input regarding their transaction in voice that is transferred in text and text is your input. "
-        "You need to find these details from the text:"
-        "as human giving input so input can be of few world and less structured gramatically and simple"
-        "example 1: today I spent 500 at dominoze"
-        "As input is processed through a STT model so input can have mistakes too like - I spent 500 at tomato, where it is zomato not tomato,you need to think and validate"
-        "\n{\"Amount\":105,\n\"Transaction Type\":\"Debit\",\n\"Bank Name\":\"SBI\",\n\"Card Type\":\"Credit Card\",\n\"marchent\":\"Auto Fuel Station\",\n\"paied to whom\":\"Auto Fuel Station\",\n\"Transaction Mode\":\"Credit Card\",\n\"Transaction Date\":\"19-03-25\",\n\"Reference Number\":\"507775912830\",\n\"tag\":[\"Transport\"]\n}"
-        "If all the details are not in the input, then the following values of the JSON should be null."
-        "output only 1 json file"
+        "Your input is a transaction message extracted from voice. Extract structured details like amount, merchant, date, and mode of payment."
+        " If input has errors (e.g., 'tomato' instead of 'Zomato'), correct them intelligently."
+        "\nExample JSON output:\n{\"Amount\":105,\"Transaction Type\":\"Debit\",\"Bank Name\":\"SBI\",\"Merchant\":\"Auto Fuel Station\",\"Transaction Mode\":\"Credit Card\",\"Transaction Date\":\"19-03-25\",\"Reference Number\":\"507775912830\",\"tags\":[\"Transport\"]}"
+        " If any field is missing, return null."
     )
     input_prompt = f"{system_prompt}\nMessage: {message}"
     response = llm.invoke(input_prompt)
@@ -95,9 +93,12 @@ def main():
         if st.button('🎤 Transcribe and Process'):
             try:
                 with st.spinner("⏳ Transcribing audio... Please wait."):
-                    time.sleep(1)  # Simulate loading time
                     result = whisper_model.transcribe(tmp_file_path)
-                    transcription = result["text"]
+                    transcription = result.get("text", "")
+                
+                if not transcription:
+                    st.error("❌ No transcription output. Please check your audio file.")
+                    return
                 
                 st.markdown("### 📜 Transcription Result")
                 st.text_area("", transcription, height=200)
@@ -105,8 +106,11 @@ def main():
                 # Process transcription with Groq LLM
                 with st.spinner("🤖 Processing transaction details..."):
                     processed_result = process_transaction_message(transcription, rag_llm)
-                    st.markdown("### 💰 Extracted Transaction Details")
-                    st.code(processed_result.content, language="json")
+                    if processed_result:
+                        st.markdown("### 💰 Extracted Transaction Details")
+                        st.code(processed_result.content if hasattr(processed_result, 'content') else processed_result, language="json")
+                    else:
+                        st.error("❌ Failed to process transaction details.")
                 
                 os.unlink(tmp_file_path)
             except Exception as e:

@@ -1,9 +1,10 @@
 import streamlit as st
 import tempfile
 import os
+import time
 from langchain_groq import ChatGroq
 
-# Set environment variables before imports
+# Set environment variables
 os.environ["USER_AGENT"] = "RAG-Chat-Assistant/1.0"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -11,18 +12,29 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # Default Groq API key
 DEFAULT_GROQ_API_KEY = "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"
 
-# Load whisper model at startup
+# Lazy load whisper model
 @st.cache_resource
 def load_whisper_model():
     try:
-        import whisper
-        return whisper.load_model("small")
+        st.info("Loading Whisper model - this may take a minute...")
+        # Add retry logic for loading the model
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                import whisper
+                return whisper.load_model("tiny")  # Use tiny model for lower resource usage
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    st.warning(f"Attempt {attempt+1} failed. Retrying in 5 seconds...")
+                    time.sleep(5)
+                else:
+                    raise e
     except ImportError:
         st.error("Whisper module not found. Please ensure it's installed correctly.")
-        st.stop()
+        return None
     except Exception as e:
         st.error(f"Error loading Whisper model: {str(e)}")
-        st.stop()
+        return None
 
 def initialize_rag_system(groq_api_key, groq_model, temperature, max_tokens):
     try:
@@ -55,11 +67,23 @@ def process_transaction_message(message, llm):
 def main():
     st.title("Audio Transaction Processor with Whisper & Groq LLM")
     
-    # Load Whisper model
-    with st.spinner("Loading Whisper model... This may take a moment."):
-        whisper_model = load_whisper_model()
+    # Initialize session state
+    if 'whisper_model_loaded' not in st.session_state:
+        st.session_state.whisper_model_loaded = False
     
-    st.success("Whisper model loaded and ready!")
+    # Load Whisper model button
+    if not st.session_state.whisper_model_loaded:
+        if st.button("Load Whisper Model"):
+            with st.spinner("Loading Whisper model... This may take a moment."):
+                whisper_model = load_whisper_model()
+                if whisper_model is not None:
+                    st.session_state.whisper_model = whisper_model
+                    st.session_state.whisper_model_loaded = True
+                    st.success("Whisper model loaded successfully!")
+                else:
+                    st.error("Failed to load Whisper model. Please try again.")
+    else:
+        st.success("Whisper model is loaded and ready!")
     
     # API Key Input
     api_key = st.text_input("GROQ API Key", value=DEFAULT_GROQ_API_KEY, type="password")
@@ -99,9 +123,13 @@ def main():
         
         # Transcribe button
         if st.button('Transcribe and Process'):
+            if not st.session_state.whisper_model_loaded:
+                st.warning("Please load the Whisper model first.")
+                return
+                
             try:
                 with st.spinner("Transcribing audio..."):
-                    result = whisper_model.transcribe(tmp_file_path)
+                    result = st.session_state.whisper_model.transcribe(tmp_file_path)
                     transcription = result["text"]
                 
                 # Display transcription
@@ -121,6 +149,7 @@ def main():
                 os.unlink(tmp_file_path)
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
+                st.exception(e)  # This will display the full traceback
 
 if __name__ == "__main__":
     main()

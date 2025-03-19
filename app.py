@@ -84,22 +84,26 @@ def main():
                     st.error("❌ No transcription output. Please check your audio file.")
                     return
                 
-                # Provide editable text area for user
-                st.markdown("### ✏️ Edit Transcription Before Processing")
-                edited_transcription = st.text_area("", transcription, height=200)
-                
-                if st.button('🚀 Process Transaction Details'):
-                    with st.spinner("🤖 Processing transaction details..."):
-                        processed_result = process_transaction_message(edited_transcription, rag_llm)
-                        if processed_result:
-                            st.markdown("### 💰 Extracted Transaction Details")
-                            st.code(processed_result, language="json")
-                        else:
-                            st.error("❌ Failed to process transaction details.")
+                # Store transcription in session state
+                st.session_state.transcription = transcription
                 
                 os.unlink(tmp_file_path)
             except Exception as e:
                 st.error(f"❌ An error occurred: {str(e)}")
+    
+    # If transcription exists, show editable text area
+    if 'transcription' in st.session_state:
+        st.markdown("### ✏️ Edit Transcription Before Processing")
+        edited_transcription = st.text_area("", st.session_state.transcription, height=200)
+        
+        if st.button('🚀 Process Transaction Details'):
+            with st.spinner("🤖 Processing transaction details..."):
+                processed_result = process_transaction_message(edited_transcription, rag_llm)
+                if processed_result:
+                    st.markdown("### 💰 Extracted Transaction Details")
+                    st.code(processed_result, language="json")
+                else:
+                    st.error("❌ Failed to process transaction details.")
 
 if __name__ == "__main__":
     main()

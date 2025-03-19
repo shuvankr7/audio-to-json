@@ -21,7 +21,7 @@ DEFAULT_MAX_TOKENS = 1024
 def load_whisper_model():
     try:
         import whisper
-        return whisper.load_model("small")
+        return whisper.load_model("medium")
     except ImportError:
         st.error("❌ Whisper module not found. Please ensure it's installed correctly.")
         st.stop()

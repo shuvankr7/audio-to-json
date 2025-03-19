@@ -1,6 +1,7 @@
 import streamlit as st
 import tempfile
 import os
+import json
 from langchain_groq import ChatGroq
 
 # Set environment variables before imports
@@ -94,8 +95,18 @@ def main():
                 # Process transcription with Groq LLM
                 with st.spinner("Processing transaction details..."):
                     processed_result = process_transaction_message(transcription, llm)
-                    st.subheader("Extracted Transaction Details:")
-                    st.code(processed_result.content, language="json")
+                    transaction_data = json.loads(processed_result.content)
+                    
+                    st.subheader("Extracted Transaction Details (Editable):")
+                    edited_transaction_data = st.text_area("Edit JSON Data", json.dumps(transaction_data, indent=4), height=300)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Submit"):
+                            st.success("Transaction data submitted successfully!")
+                    with col2:
+                        if st.button("Cancel"):
+                            st.warning("Changes discarded.")
                 
                 # Clean up temp file
                 os.unlink(tmp_file_path)

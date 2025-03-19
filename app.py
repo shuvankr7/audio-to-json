@@ -72,7 +72,7 @@ def process_transaction_message(message, llm):
         "As input is processed through a STT model so input can have mistakes too like - I spent 500 at tomato, where it is zomato not tomato,you need to think and validate"
         "\n{\"Amount\":105,\n\"Transaction Type\":\"Debit\",\n\"Bank Name\":\"SBI\",\n\"Card Type\":\"Credit Card\",\n\"marchent\":\"Auto Fuel Station\",\n\"paied to whom\":\"Auto Fuel Station\",\n\"Transaction Mode\":\"Credit Card\",\n\"Transaction Date\":\"19-03-25\",\n\"Reference Number\":\"507775912830\",\n\"tag\":[\"Transport\"]\n}"
         "If all the details are not in the input, then the following values of the JSON should be null."
-        "DONT' OUTPUT NOTES OR ANY TEXT, JUST JSON"
+        "YOU OUTPUT ONLY JSON OR LIST OF JSON IN OUTPUT"
         "IF USER GIVES MULTIPLE ITEMS CORROSPONDING TO MULTIPLE PRICES THEN GENERATE LIST OF JESON CORROSPONDINGLY"
     
     )

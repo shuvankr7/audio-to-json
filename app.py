@@ -2,6 +2,7 @@ import streamlit as st
 import tempfile
 import os
 from langchain_groq import ChatGroq
+import time
 
 # Set environment variables before imports
 os.environ["USER_AGENT"] = "RAG-Chat-Assistant/1.0"
@@ -14,6 +15,18 @@ DEFAULT_MODEL = "llama3-70b-8192"
 DEFAULT_TEMPERATURE = 0.5
 DEFAULT_MAX_TOKENS = 1024
 
+# Custom styling
+st.set_page_config(page_title="Audio Transaction Processor", page_icon="🔊", layout="wide")
+st.markdown("""
+    <style>
+        .main {background-color: #f5f7fa;}
+        .stButton>button {background-color: #4CAF50; color: white; font-size: 18px; padding: 10px 24px;}
+        .stFileUploader>button {background-color: #008CBA; color: white;}
+        .stSpinner {color: #FF5733;}
+        .stTextArea textarea {font-size: 16px;}
+    </style>
+""", unsafe_allow_html=True)
+
 # Load whisper model at startup
 @st.cache_resource
 def load_whisper_model():
@@ -21,10 +34,10 @@ def load_whisper_model():
         import whisper
         return whisper.load_model("small")
     except ImportError:
-        st.error("Whisper module not found. Please ensure it's installed correctly.")
+        st.error("❌ Whisper module not found. Please ensure it's installed correctly.")
         st.stop()
     except Exception as e:
-        st.error(f"Error loading Whisper model: {str(e)}")
+        st.error(f"❌ Error loading Whisper model: {str(e)}")
         st.stop()
 
 # Initialize RAG system internally
@@ -37,7 +50,7 @@ def initialize_rag_system():
             max_tokens=DEFAULT_MAX_TOKENS
         )
     except Exception as e:
-        st.error(f"Error initializing RAG system: {str(e)}")
+        st.error(f"❌ Error initializing RAG system: {str(e)}")
         return None
 
 # Load Whisper model and RAG system on startup
@@ -53,19 +66,24 @@ def process_transaction_message(message, llm):
         "As input is processed through a STT model so input can have mistakes too like - I spent 500 at tomato, where it is zomato not tomato,you need to think and validate"
         "\n{\"Amount\":105,\n\"Transaction Type\":\"Debit\",\n\"Bank Name\":\"SBI\",\n\"Card Type\":\"Credit Card\",\n\"marchent\":\"Auto Fuel Station\",\n\"paied to whom\":\"Auto Fuel Station\",\n\"Transaction Mode\":\"Credit Card\",\n\"Transaction Date\":\"19-03-25\",\n\"Reference Number\":\"507775912830\",\n\"tag\":[\"Transport\"]\n}"
         "If all the details are not in the input, then the following values of the JSON should be null."
+        "output only 1 json file"
     )
     input_prompt = f"{system_prompt}\nMessage: {message}"
     response = llm.invoke(input_prompt)
     return response
 
 def main():
-    st.title("Audio Transaction Processor with Whisper & Groq LLM")
-    st.success("Whisper model and RAG system loaded and ready!")
+    st.markdown("<h1 style='text-align: center; color: #333;'>🔊 Audio Transaction Processor</h1>", unsafe_allow_html=True)
+    st.markdown("<h4 style='text-align: center; color: #555;'>Whisper AI + Groq LLM</h4>", unsafe_allow_html=True)
+    st.success("✅ Whisper model and RAG system loaded and ready!")
     
-    # File uploader
-    uploaded_file = st.file_uploader("Choose an audio file", type=['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'])
+    st.markdown("---")
+    
+    # File uploader with better UI
+    uploaded_file = st.file_uploader("📂 Upload an audio file", type=['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'])
     
     if uploaded_file is not None:
+        st.markdown("**🎵 Audio Preview:**")
         st.audio(uploaded_file, format="audio/*")
         
         # Create a temporary file
@@ -73,25 +91,26 @@ def main():
             tmp_file.write(uploaded_file.getvalue())
             tmp_file_path = tmp_file.name
         
-        # Transcribe button
-        if st.button('Transcribe and Process'):
+        # Transcribe button with better UI
+        if st.button('🎤 Transcribe and Process'):
             try:
-                with st.spinner("Transcribing audio..."):
+                with st.spinner("⏳ Transcribing audio... Please wait."):
+                    time.sleep(1)  # Simulate loading time
                     result = whisper_model.transcribe(tmp_file_path)
                     transcription = result["text"]
                 
-                st.subheader("Transcription Result")
+                st.markdown("### 📜 Transcription Result")
                 st.text_area("", transcription, height=200)
                 
                 # Process transcription with Groq LLM
-                with st.spinner("Processing transaction details..."):
+                with st.spinner("🤖 Processing transaction details..."):
                     processed_result = process_transaction_message(transcription, rag_llm)
-                    st.subheader("Extracted Transaction Details:")
+                    st.markdown("### 💰 Extracted Transaction Details")
                     st.code(processed_result.content, language="json")
                 
                 os.unlink(tmp_file_path)
             except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+                st.error(f"❌ An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()

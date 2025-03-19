@@ -9,13 +9,13 @@ os.environ["USER_AGENT"] = "RAG-Chat-Assistant/1.0"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# Default Groq API key and model settings
+# Default settings (fixed values)
 DEFAULT_GROQ_API_KEY = "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"
 DEFAULT_GROQ_MODEL = "llama3-70b-8192"
 DEFAULT_TEMPERATURE = 0.5
 DEFAULT_MAX_TOKENS = 1024
 
-# Load whisper model at startup
+# Load Whisper model at startup
 @st.cache_resource
 def load_whisper_model():
     try:
@@ -28,7 +28,7 @@ def load_whisper_model():
         st.error(f"Error loading Whisper model: {str(e)}")
         st.stop()
 
-# Initialize RAG system internally
+# Initialize RAG internally
 @st.cache_resource
 def initialize_rag_system():
     try:
@@ -59,36 +59,33 @@ def main():
     st.title("Audio Transaction Processor with Whisper & Groq LLM")
     
     # Load Whisper model
-    with st.spinner("Loading Whisper model... This may take a moment."):
+    with st.spinner("Loading Whisper model..."):
         whisper_model = load_whisper_model()
-    st.success("Whisper model loaded and ready!")
+    st.success("Whisper model loaded!")
     
-    # Initialize RAG system internally
+    # Initialize RAG system
     llm = initialize_rag_system()
     if not llm:
-        st.error("Failed to initialize the RAG system. Please check the API key or model settings.")
+        st.error("Failed to initialize the RAG system. Check API key or model settings.")
         return
     
     # File uploader
     uploaded_file = st.file_uploader("Choose an audio file", type=['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'])
     
     if uploaded_file is not None:
-        # Display audio player
         st.audio(uploaded_file, format="audio/*")
         
-        # Create a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
             tmp_file.write(uploaded_file.getvalue())
             tmp_file_path = tmp_file.name
         
-        # Transcribe button
+        # Transcribe and Process
         if st.button('Transcribe and Process'):
             try:
                 with st.spinner("Transcribing audio..."):
                     result = whisper_model.transcribe(tmp_file_path)
                     transcription = result["text"]
                 
-                # Display transcription
                 st.subheader("Transcription Result")
                 st.text_area("", transcription, height=200)
                 
@@ -108,7 +105,6 @@ def main():
                         if st.button("Cancel"):
                             st.warning("Changes discarded.")
                 
-                # Clean up temp file
                 os.unlink(tmp_file_path)
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")

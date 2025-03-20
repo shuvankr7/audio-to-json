@@ -23,10 +23,10 @@ def load_whisper_model():
         import whisper
         return whisper.load_model("small")
     except ImportError:
-        st.error("❌ Whisper module not found. Please ensure it's installed correctly.")
+        st.error(" Whisper module not found. Please ensure it's installed correctly.")
         st.stop()
     except Exception as e:
-        st.error(f"❌ Error loading Whisper model: {str(e)}")
+        st.error(f" Error loading Whisper model: {str(e)}")
         st.stop()
 
 # Initialize RAG system internally
@@ -39,7 +39,7 @@ def initialize_rag_system():
             max_tokens=DEFAULT_MAX_TOKENS
         )
     except Exception as e:
-        st.error(f"❌ Error initializing RAG system: {str(e)}")
+        st.error(f" Error initializing RAG system: {str(e)}")
         return None
 
 # Load models on startup
@@ -66,7 +66,6 @@ def process_transaction_message(message, llm):
 
 def main():
     st.markdown("<h1 style='text-align: center;'>🔊 Audio Transaction Processor</h1>", unsafe_allow_html=True)
-    st.success("✅ Whisper model and RAG system loaded and ready!")
     
     st.markdown("---")
     uploaded_file = st.file_uploader("📂 Upload an audio file", type=['mp3', 'wav', 'm4a', 'flac', 'ogg', 'aac'])
@@ -86,7 +85,7 @@ def main():
                     transcription = result.get("text", "")
                 
                 if not transcription:
-                    st.error("❌ No transcription output. Please check your audio file.")
+                    st.error(" No transcription output. Please check your audio file.")
                     return
                 
                 # Store transcription in session state
@@ -94,21 +93,21 @@ def main():
                 
                 os.unlink(tmp_file_path)
             except Exception as e:
-                st.error(f"❌ An error occurred: {str(e)}")
+                st.error(f" An error occurred: {str(e)}")
     
     # If transcription exists, show editable text area
     if 'transcription' in st.session_state:
         st.markdown("### ✏️ Edit Transcription Before Processing")
         edited_transcription = st.text_area("", st.session_state.transcription, height=200)
         
-        if st.button('🚀 Process Transaction Details'):
+        if st.button(' Process Transaction Details'):
             with st.spinner("🤖 Processing transaction details..."):
                 processed_result = process_transaction_message(edited_transcription, rag_llm)
                 if processed_result:
-                    st.markdown("### 💰 Extracted Transaction Details")
+                    st.markdown("###  Extracted Transaction Details")
                     st.code(processed_result, language="json")
                 else:
-                    st.error("❌ Failed to process transaction details.")
+                    st.error(" Failed to process transaction details.")
 
 if __name__ == "__main__":
     main()
